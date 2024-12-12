@@ -1,3 +1,6 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 [tool.bandit]
 exclude_dirs = ["/venv/"]
 [tool.bandit.assert_used]
@@ -24,7 +27,8 @@ exclude = [".git", "__pycache__", ".tox", "build", "dist", "*.egg_info", "venv"]
 select = ["E", "W", "F", "C", "N", "R", "D", "H"]
 # Ignore W503, E501 because using black creates errors with this
 # Ignore D107 Missing docstring in __init__
-ignore = ["W503", "E501", "D107"]
+# Ignore E402 module level import not at top of file 
+ignore = ["W503", "E501", "D107", "E402"]
 # D100, D101, D102, D103: Ignore missing docstrings in tests
 per-file-ignores = ["tests/*:D100,D101,D102,D103,D104,D205,D212,D415"]
 docstring-convention = "google"
@@ -46,6 +50,9 @@ module = "tests.*"
 
 [tool.pylint]
 disable = "wrong-import-order"
+
+[tool.pylint.tests]
+disable = ["too-many-arguments"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

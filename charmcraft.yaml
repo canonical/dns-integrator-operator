@@ -1,9 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
-# This file configures Charmcraft.
-# See https://juju.is/docs/sdk/charmcraft-config for guidance.
 
-type: charm
+type: "charm"
 bases:
   - build-on:
     - name: ubuntu
@@ -11,3 +9,29 @@ bases:
     run-on:
     - name: ubuntu
       channel: "22.04"
+config:
+  options:
+    domain:
+      description: "Domain of the requested DNS record"
+      default: ""
+      type: string
+    host_label:
+      description: "Host label of the requested DNS record"
+      default: ""
+      type: string
+    ttl:
+      description: "TTL of the requested DNS record"
+      default: 600
+      type: int
+    record_class:
+      description: "Record class of the requested DNS record"
+      default: "IN"
+      type: string
+    record_type:
+      description: "Record type of the requested DNS record"
+      default: "A"
+      type: string
+    record_data:
+      description: "Record data of the requested DNS record"
+      default: ""
+      type: string

@@ -50,4 +50,3 @@ For information about how to deploy, integrate, and manage this charm, see the O
 * [Launchpad]() <!--Link to Launchpad (if applicable)-->
 
 ## (Optional) Licensing and trademark
-
