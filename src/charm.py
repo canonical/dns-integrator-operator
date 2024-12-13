@@ -30,7 +30,7 @@ class DnsIntegratorOperatorCharm(ops.CharmBase):
         self.dns_record = dns_record.DNSRecordRequires(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-    def _on_config_changed(self, _) -> None:
+    def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
         """Handle changes in configuration."""
         self.unit.status = ops.MaintenanceStatus("Configuring charm")
         self._update_relations()

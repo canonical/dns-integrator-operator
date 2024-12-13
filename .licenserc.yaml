@@ -12,6 +12,7 @@ header:
     - '**/*.json'
     - '**/*.md'
     - '**/*.txt'
+    - 'lib/**'
     - '.jujuignore'
     - '.gitignore'
     - '.licenserc.yaml'
