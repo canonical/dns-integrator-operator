@@ -3,7 +3,9 @@
 
 name: dns-integrator-operator
 type: charm
+display-name: DNS Integrator
 summary: DNS integrator to create DNS records
+docs: https://github.com/canonical/dns-integrator-operator
 description: |
   A [Juju](https://juju.is/) [charm](https://juju.is/docs/olm/charmed-operators)
   deploying and managing a DNS Integrator on Kubernetes and bare metal.
