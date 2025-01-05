@@ -7,4 +7,4 @@
 
 
 def test_empty_test():
-    pass
+    """Empty integration test."""
