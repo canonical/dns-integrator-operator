@@ -4,3 +4,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests."""
+
+
+def test_empty_test():
+    pass
