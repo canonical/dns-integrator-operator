@@ -45,19 +45,26 @@ class DnsIntegratorOperatorCharm(ops.CharmBase):
 
     def _get_dns_record_requirer_data(self) -> dns_record.DNSRecordRequirerData:
         """Get DNS record requirer data."""
-        entry = dns_record.RequirerEntry(
-            domain=self.config["domain"],
-            host_label=self.config["host_label"],
-            ttl=self.config.get("ttl", 600),
-            record_class=self.config.get("record_class", "IN"),
-            record_type=self.config.get("record_type", "A"),
-            record_data=self.config["record_data"],
-            uuid=uuid.uuid4(),
-        )
-        logger.debug("DNS record request: %s", entry)
-        return dns_record.DNSRecordRequirerData(
-            dns_entries=[entry],
-        )
+        entries = []
+        for request in str(self.config["requests"]).split("\n"):
+            data = request.split()
+            if len(data) != 6:
+                logger.debug("ERROR: %s", data)
+                continue
+            logger.debug("DEBUG: %s", data)
+            (host_label, domain, ttl, record_class, record_type, record_data) = data
+            entry = dns_record.RequirerEntry(
+                host_label=host_label,
+                domain=domain,
+                ttl=ttl,
+                record_class=record_class,
+                record_type=record_type,
+                record_data=record_data,
+                uuid=uuid.uuid4(),
+            )
+            logger.debug("DNS record request: %s", entry)
+            entries.append(entry)
+        return dns_record.DNSRecordRequirerData(dns_entries=entries)
 
 
 if __name__ == "__main__":  # pragma: nocover
