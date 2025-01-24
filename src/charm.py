@@ -1,31 +1,23 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-# Learn more at: https://juju.is/docs/sdk
-
-"""Charm the service.
-
-Refer to the following post for a quick-start guide that will help you
-develop a new k8s charm using the Operator Framework:
-
-https://discourse.charmhub.io/t/4208
-"""
+"""DNS Integrator Charm."""
 
 import logging
 import typing
+import uuid
 
 import ops
-from ops import pebble
+from charms.bind.v0 import dns_record
 
-# Log messages can be retrieved using juju debug-log
 logger = logging.getLogger(__name__)
 
 VALID_LOG_LEVELS = ["info", "debug", "warning", "error", "critical"]
 
 
-class IsCharmsTemplateCharm(ops.CharmBase):
+class DnsIntegratorOperatorCharm(ops.CharmBase):
     """Charm the service."""
 
     def __init__(self, *args: typing.Any):
@@ -35,83 +27,45 @@ class IsCharmsTemplateCharm(ops.CharmBase):
             args: Arguments passed to the CharmBase parent constructor.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.httpbin_pebble_ready, self._on_httpbin_pebble_ready)
+        self.dns_record = dns_record.DNSRecordRequires(self)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-    def _on_httpbin_pebble_ready(self, event: ops.PebbleReadyEvent) -> None:
-        """Define and start a workload using the Pebble API.
-
-        Change this example to suit your needs. You'll need to specify the right entrypoint and
-        environment configuration for your specific workload.
-
-        Learn more about interacting with Pebble at at https://juju.is/docs/sdk/pebble.
-
-        Args:
-            event: event triggering the handler.
-        """
-        # Get a reference the container attribute on the PebbleReadyEvent
-        container = event.workload
-        # Add initial Pebble config layer using the Pebble API
-        container.add_layer("httpbin", self._pebble_layer, combine=True)
-        # Make Pebble reevaluate its plan, ensuring any services are started if enabled.
-        container.replan()
-        # Learn more about statuses in the SDK docs:
-        # https://juju.is/docs/sdk/constructs#heading--statuses
+    def _on_config_changed(self, _: ops.ConfigChangedEvent) -> None:
+        """Handle changes in configuration."""
+        self.unit.status = ops.MaintenanceStatus("Configuring charm")
+        self._update_relations()
         self.unit.status = ops.ActiveStatus()
 
-    def _on_config_changed(self, event: ops.ConfigChangedEvent) -> None:
-        """Handle changed configuration.
+    def _update_relations(self) -> None:
+        """Update all DNS data for the existing relations."""
+        if not self.model.unit.is_leader():
+            return
+        for relation in self.model.relations[self.dns_record.relation_name]:
+            self.dns_record.update_relation_data(relation, self._get_dns_record_requirer_data())
 
-        Change this example to suit your needs. If you don't need to handle config, you can remove
-        this method.
-
-        Learn more about config at https://juju.is/docs/sdk/config
-
-        Args:
-            event: event triggering the handler.
-        """
-        # Fetch the new config value
-        log_level = str(self.model.config["log-level"]).lower()
-
-        # Do some validation of the configuration option
-        if log_level in VALID_LOG_LEVELS:
-            # The config is good, so update the configuration of the workload
-            container = self.unit.get_container("httpbin")
-            # Verify that we can connect to the Pebble API in the workload container
-            if container.can_connect():
-                # Push an updated layer with the new config
-                container.add_layer("httpbin", self._pebble_layer, combine=True)
-                container.replan()
-
-                logger.debug("Log level for gunicorn changed to '%s'", log_level)
-                self.unit.status = ops.ActiveStatus()
-            else:
-                # We were unable to connect to the Pebble API, so we defer this event
-                event.defer()
-                self.unit.status = ops.WaitingStatus("waiting for Pebble API")
-        else:
-            # In this case, the config option is bad, so block the charm and notify the operator.
-            self.unit.status = ops.BlockedStatus("invalid log level: '{log_level}'")
-
-    @property
-    def _pebble_layer(self) -> pebble.LayerDict:
-        """Return a dictionary representing a Pebble layer."""
-        return {
-            "summary": "httpbin layer",
-            "description": "pebble config layer for httpbin",
-            "services": {
-                "httpbin": {
-                    "override": "replace",
-                    "summary": "httpbin",
-                    "command": "gunicorn -b 0.0.0.0:80 httpbin:app -k gevent",
-                    "startup": "enabled",
-                    "environment": {
-                        "GUNICORN_CMD_ARGS": f"--log-level {self.model.config['log-level']}"
-                    },
-                }
-            },
-        }
+    def _get_dns_record_requirer_data(self) -> dns_record.DNSRecordRequirerData:
+        """Get DNS record requirer data."""
+        entries = []
+        for request in str(self.config["requests"]).split("\n"):
+            data = request.split()
+            if len(data) != 6:
+                logger.debug("ERROR: %s", data)
+                continue
+            logger.debug("DEBUG: %s", data)
+            (host_label, domain, ttl, record_class, record_type, record_data) = data
+            entry = dns_record.RequirerEntry(
+                host_label=host_label,
+                domain=domain,
+                ttl=ttl,
+                record_class=record_class,
+                record_type=record_type,
+                record_data=record_data,
+                uuid=uuid.uuid4(),
+            )
+            logger.debug("DNS record request: %s", entry)
+            entries.append(entry)
+        return dns_record.DNSRecordRequirerData(dns_entries=entries)
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main.main(IsCharmsTemplateCharm)
+    ops.main(DnsIntegratorOperatorCharm)  # type: ignore
